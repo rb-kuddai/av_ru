@@ -36,14 +36,6 @@ function plotpcl(pcl)
   %background point project on background normal
   bg_prj_point = prctile(norm_prjs, 50);
   bg_point = mean_point + bg_prj_point * bg_n;% 1x3
-  
-%   %plotting arrow of background normal
-%   arrow_p = bg_point;% 1x3
-%   %scale it and invert it for better representation
-%   %because z axis is inverted
-%   arrow_dir   = -bg_n * max_z/4; 
-%   quiver3(arrow_p(1), arrow_p(2), arrow_p(3),...
-%           arrow_dir(1)  , arrow_dir(2)  , arrow_dir(3), 'color', 'b');  
         
   %background surface parameters for following equation:
   % n*r=d where n - normal, d - offset along the normal
@@ -75,57 +67,48 @@ function plotpcl(pcl)
   % cluster in n categories
   [class, type]=dbscan([XYZ(fg_ids,1),XYZ(fg_ids,2),XYZ(fg_ids,3)],100);
   % What are those unique groups? 
-    uniqueGroups = unique(class);
+  uniqueGroups = unique(class);
   % RGB values of your favorite colors: 
-  colors = brewermap(length(uniqueGroups),'Set1'); 
     % Initialize some axes
     view(3)
     grid on
     hold on
     triples = combnk (uniqueGroups,3);
-    prevArea = 0;
     
-    for k = 1:size(triples,1)
-        groupElement = zeros(3,size(xyz,1),size(xyz,2));
-        for group =1:size(triples)
-%             meanCl(group,1) = mean(XYZ(ind));
-            grupa = triples(group,:);
-            area = triangleArea3d(xyz(class==grupa(1)),xyz(class==grupa(2)),xyz(class==grupa(3)));
-        end
-        
-        % Get indices of this particular unique group:
-        ind = class==uniqueGroups(k); 
-        % Plot only this group: 
-        plot3(x(ind),y(ind),z(ind),'.','color',colors(k,:),'markersize',20); 
+    % compute means for each cluster 1x3 - per cluster
+    groups2mean = containers.Map('KeyType','double','ValueType','any');
+    for t = 1:numel(uniqueGroups)
+      group_id = uniqueGroups(t);
+      groups2mean(group_id) = mean(xyz(class == group_id, :));
     end
+    
+    area = zeros(size(triples));
+    g2m = groups2mean;
+    maxArea = 0;
+    for group = 1:size(triples)
+        grupa = triples(group,:);
+        area(group) = triangleArea3d(g2m(grupa(1)),g2m(grupa(2)),g2m(grupa(3)));
+        if area(group) > maxArea
+            maxArea = area(group);
+        end;
+    end;
+    % choose spheres
+    index = area==maxArea;
+    spheres = triples(index,:);
+    % set cluster colours
+    colors = brewermap(length(spheres),'Set1'); 
     % Plot each group individually: 
-    for k = 1:length(uniqueGroups)
+    for k = 1:length(spheres)
           % Get indices of this particular unique group:
-          ind = class==uniqueGroups(k); 
+          ind = class==spheres(k); 
           % Plot only this group: 
           plot3(x(ind),y(ind),z(ind),'.','color',colors(k,:),'markersize',20); 
     end
-    legend('group 1','group 2','group 3','group 4')
-%   z = XYZ(fg_ids,3);
-%   % call GSCATTER and capture output argument (handles to lines)
-%   h = gscatter(XYZ(fg_ids,1), XYZ(fg_ids,2), class);
-%   % for each unique group in 'class', set the ZData property appropriately
-%   gu = unique(class);
-%   for k = 1:numel(gu)
-%       set(h(k), 'ZData', z( class == gu(k) ));
-%   end
+    legend('group 1','group 2','group 3')
   set(gca,'zdir','reverse')
   zlim([0.2 max(z(:))])
   ylim([0 1])
   xlim([-.5 .5])
-  
-  
-%   fscatter32(XYZ(fg_ids,1), XYZ(fg_ids,2), XYZ(fg_ids,3), Xim(fg_ids), cm)
-%   max_z = max(z(:));
-%   zlim([0.2 max(z(:))])
-%   ylim([0 1])
-%   xlim([-.5 .5])
-%   set(gca,'zdir','reverse')
   hold on
   %plotting arrow of background normal
   arrow_p = bg_point;% 1x3
