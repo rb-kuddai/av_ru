@@ -3,7 +3,7 @@
 % Generate roughly spherical data
 Radius_act=7.2;
 Center_act=[1,2,3];
-NoiseScale=0.1;
+NoiseScale=0.0;
 
 
 Angles=rand(10,2)*diag([-pi/3,2*pi]);

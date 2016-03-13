@@ -48,15 +48,13 @@ function plotpcl(pcl)
         
   %background surface parameters for following equation:
   % n*r=d where n - normal, d - offset along the normal
-  d = bg_point *  bg_n';
-  threshold = 0.0125;
+  d = bg_point *  bg_n;
+  threshold = 0.1;
   cloud_surf_prjs = XYZ * bg_n'; %number of cloud point x 1
-  %background indices
-  bg_ids = abs(cloud_surf_prjs - d) < threshold; 
-  %foreground indices
-  fg_ids = ~bg_ids;
+  bg_ids = abs(cloud_surf_prjs - d) < threshold;
+        
   figure(4);
-  fscatter32(XYZ(fg_ids,1), XYZ(fg_ids,2), XYZ(fg_ids,3), Xim(fg_ids), cm)
+  fscatter32(XYZ(bg_ids,1), XYZ(bg_ids,2), XYZ(bg_ids,3), Xim(bg_ids), cm)
   max_z = max(z(:));
   zlim([0.2 max(z(:))])
   ylim([0 1])
@@ -80,9 +78,9 @@ function plotpcl(pcl)
   [H,W]=size(pcl(:,:,1));
   depth=zeros(H,W);
   for r = 1 : H
-    for c = 1 : W
-      depth(r,c) = norm(reshape(pcl(r,c,4:6),1,3));
-    end
+  for c = 1 : W
+    depth(r,c) = norm(reshape(pcl(r,c,4:6),1,3));
+  end
   end
   M = max(max(depth));
   m = min(min(depth));
