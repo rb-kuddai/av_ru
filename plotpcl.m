@@ -56,6 +56,21 @@ function plotpcl(pcl)
   %foreground indices
   fg_ids = ~bg_ids;
   figure(4);
+%   clusteredData = kmeans(XYZ(fg_ids,:),4);
+%   [class, type]=dbscan([XYZ(fg_ids,1),XYZ(fg_ids,2),XYZ(fg_ids,3)],200,[]);
+  [class, type]=dbscan([XYZ(fg_ids,1),XYZ(fg_ids,2),XYZ(fg_ids,3)],225,[]);
+  z = XYZ(fg_ids,3);
+  % call GSCATTER and capture output argument (handles to lines)
+  h = gscatter(XYZ(fg_ids,1), XYZ(fg_ids,2), class);
+  % for each unique group in 'g', set the ZData property appropriately
+  gu = unique(class);
+  for k = 1:numel(gu)
+      set(h(k), 'ZData', z( class == gu(k) ));
+  end
+  view(3)
+  
+  
+  
   fscatter32(XYZ(fg_ids,1), XYZ(fg_ids,2), XYZ(fg_ids,3), Xim(fg_ids), cm)
   max_z = max(z(:));
   zlim([0.2 max(z(:))])
