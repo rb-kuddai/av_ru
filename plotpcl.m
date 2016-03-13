@@ -96,8 +96,30 @@ function plotpcl(pcl)
     % choose spheres
     index = area==maxArea;
     spheres = triples(index,:); % those are the three spheres
+    rest = setdiff(uniqueGroups,spheres);
     % set cluster colours
     colors = brewermap(length(spheres),'Set1'); 
+    % plot middle patch
+    for k = 1:length(rest)
+          % Get indices of this particular unique group:
+          ind = class==rest(k); 
+          % Plot only this group: 
+          plot3(x(ind),y(ind),z(ind),'.','color',colors(1,:),'markersize',20); 
+    end
+    set(gca,'zdir','reverse')
+    zlim([0.2 max(z(:))])
+    ylim([0 1])
+    xlim([-.5 .5])
+    hold on
+    %plotting arrow of background normal
+    arrow_p = bg_point;% 1x3
+    %scale it and invert it for better representation
+    %because z axis is inverted
+    arrow_dir   = -bg_n * max_z/4; 
+    quiver3(arrow_p(1), arrow_p(2), arrow_p(3),...
+          arrow_dir(1)  , arrow_dir(2)  , arrow_dir(3), 'color', 'b'); 
+    view(3)
+    hold off
     % Plot each group individually: 
     for k = 1:length(spheres)
           % Get indices of this particular unique group:
