@@ -1,9 +1,5 @@
-function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D)
-%{
-#Convention
- Bg - background
- Fg - foreground
-  
+function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D, showProjectedCenters)
+%{  
 #Input
   * frame3D - frame 3D from pcl_cell
 
@@ -12,8 +8,8 @@ function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D)
     Size: number of foreground points x 3.
   * rgbFG - Colors of background pixels between 0 and 1. 
     Size: number of foreground points x 3.
-  * normalBg - normal vector of background surface plane
-  * pointBg  - point on the background surface plane
+  * normalBg - normal vector of background surface plane. Only for plotting
+  * pointBg  - point on the background surface plane. Only for plotting
 
 #Algorithm
   It relies on the fact that overwhelming majority of pixels belongs to
@@ -95,12 +91,23 @@ function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D)
   %project centered cloud points on background normal vector
   %and estimating plane distance in this centered coordinate frame
   xyzProjectedCentered = xyzCentered * normalBg';
+  %showing distribution of positions along background surface normal
+  if nargin == 2 && showProjectedCenters == 1
+    figure();
+    clf;
+    histogram(xyzProjectedCentered);
+    title('cloud points along background normal');
+    xlabel('position along background normal');
+    ylabel('number of points');
+    fig=gcf;
+    set(findall(fig,'-property','FontSize'),'FontSize',17);
+  end
+  
   rawDistanceBg = prctile(xyzProjectedCentered, 50);
   %point which is located on background surface
   pointBg = meanPoint + rawDistanceBg * normalBg;% 1x3
 
-  %background surface parameters for following equation:
-  % n*r=d where n - normal, d - offset along the normal
+  %background plane distance from global coordinate frame
   planeBgDistance = pointBg *  normalBg'; %scalar
   
   %-------------- EXTRACTING FOREGROUND --------------
@@ -118,6 +125,7 @@ function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D)
   normIsInverted = fgDiff(1) < 0;
   if normIsInverted
       fgIds = (diffFromBg) < -heightThreshold; 
+      normalBg = -normalBg;
   else
       fgIds = (diffFromBg) > heightThreshold;
   end

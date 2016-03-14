@@ -1,17 +1,15 @@
-function [xyzFG, rgbFG] = getForeground(pcl)
-%{
-#Convention
- BG - background
- FG - foreground
-  
+function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D, show)
+%{  
 #Input
-  * pcl - 3D frame 
+  * frame3D - frame 3D from pcl_cell
 
 #Output
   * xyzFG - Coordinates of foreground pixels. 
     Size: number of foreground points x 3.
   * rgbFG - Colors of background pixels between 0 and 1. 
     Size: number of foreground points x 3.
+  * normalBg - normal vector of background surface plane. Only for plotting
+  * pointBg  - point on the background surface plane. Only for plotting
 
 #Algorithm
   It relies on the fact that overwhelming majority of pixels belongs to
@@ -46,18 +44,29 @@ function [xyzFG, rgbFG] = getForeground(pcl)
 %   
 %   Cheers, Bob
   %-------------- INITIAL CLEANING --------------
-  existingId = pcl(:, :, 6) ~= 0;
-  
-  x  = pcl(:, :, 4);
-  y  = pcl(:, :, 5);
-  z  = pcl(:, :, 6);
+  existingIds = frame3D(:, :, 6) ~= 0;
   %delete non-existant data
-  x  = x(existingId);
-  y  = y(existingId);
-  z  = z(existingId);
+  %coords
+  x  = frame3D(:, :, 4);
+  y  = frame3D(:, :, 5);
+  z  = frame3D(:, :, 6);
+  
+  x  = x(existingIds);
+  y  = y(existingIds);
+  z  = z(existingIds);
+  %colors
+  r  = frame3D(:, :, 1);
+  g  = frame3D(:, :, 2);
+  b  = frame3D(:, :, 3);
+
+  r  = r(existingIds);
+  g  = g(existingIds);
+  b  = b(existingIds);
   
   %matrix with background and foreground cloud points
   xyz = [x y z];% number of cloud points x 3
+  %matrix with normalised colors for background and foreground cloud points
+  rgb = [r g b] / 255;% number of cloud points x 3
   
   %roatate data a little bit for a better view
   alpha = deg2rad(30);
@@ -76,37 +85,41 @@ function [xyzFG, rgbFG] = getForeground(pcl)
   [U,D,V]= svd(scatter);
   % compute background normal vector by selecting vector 
   % with lowest eigenvalue
-  planeBGnormal = V(:, 3)'; %1x3
+  normalBg = V(:, 3)'; %1x3
   
   %-------------- FINDING PLANE DISTANCE --------------
   %project centered cloud points on background normal vector
   %and estimating plane distance in this centered coordinate frame
-  normalBGdist = xyzCentered * planeBGnormal';
-  rawDistanceBG = prctile(normalBGdist, 50);
+  xyzProjectedCentered = xyzCentered * normalBg';
+  rawDistanceBg = prctile(xyzProjectedCentered, 50);
   %point which is located on background surface
-  pointBG = meanPoint + rawDistanceBG * planeBGnormal;% 1x3
+  pointBg = meanPoint + rawDistanceBg * normalBg;% 1x3
 
-  %background surface parameters for following equation:
-  % n*r=d where n - normal, d - offset along the normal
-  planeBGdistance = pointBG *  planeBGnormal'; %scalar
+  %background plane distance from global coordinate frame
+  planeBgDistance = pointBg *  normalBg'; %scalar
   
   %-------------- EXTRACTING FOREGROUND --------------
   planeDistThreshold = 0.0305;
-  cloud_surf_prjs = xyz * planeBGnormal'; %number of cloud point x 1
+  xyzProjected = xyz * normalBg'; %number of cloud point x 1
   %background indices
   %bg_ids = (cloud_surf_prjs - d) < -threshold; 
-  surf_diff = cloud_surf_prjs - planeBGdistance;
-  bg_ids_raw = abs(surf_diff) < planeDistThreshold; 
+  diffFromBg = xyzProjected - planeBgDistance;
+  bgIds = abs(diffFromBg) < planeDistThreshold; 
   %foreground indices
-  fg_ids_raw = ~bg_ids_raw;
-  fg_diff = surf_diff(fg_ids_raw);
+  fgIdsRaw = ~bgIds;
+  fgDiff = diffFromBg(fgIdsRaw);
   %remove noise
   heightThreshold = 0.0125;
-  norm_is_inverted = fg_diff(1) < 0;
-  if norm_is_inverted
-      fg_ids = (surf_diff) < -heightThreshold; 
+  normIsInverted = fgDiff(1) < 0;
+  if normIsInverted
+      fgIds = (diffFromBg) < -heightThreshold; 
+      normalBg = -normalBg;
   else
-      fg_ids = (surf_diff) > heightThreshold;
+      fgIds = (diffFromBg) > heightThreshold;
   end
+  
+  %return foreground values
+  xyzFg = xyz(fgIds, :);
+  rgbFg = rgb(fgIds, :);
 end
 
