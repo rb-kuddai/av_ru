@@ -100,26 +100,59 @@ function plotpcl(pcl)
     % set cluster colours
     colors = brewermap(length(spheres),'Set1'); 
     % plot middle patch
-    for k = 1:length(rest)
-          % Get indices of this particular unique group:
-          ind = class==rest(k); 
-          % Plot only this group: 
-          plot3(x(ind),y(ind),z(ind),'.','color',colors(1,:),'markersize',20); 
-    end
-    set(gca,'zdir','reverse')
-    zlim([0.2 max(z(:))])
-    ylim([0 1])
-    xlim([-.5 .5])
+%     for k = 1:length(rest)
+%           % Get indices of this particular unique group:
+%           ind = class==rest(k); 
+%           % Plot only this group: 
+%           plot3(x(ind),y(ind),z(ind),'.','color',colors(1,:),'markersize',20); 
+%     end
+%     set(gca,'zdir','reverse')
+%     zlim([0.2 max(z(:))])
+%     ylim([0 1])
+%     xlim([-.5 .5])
+%     hold on
+%     %plotting arrow of background normal
+%     arrow_p = bg_point;% 1x3
+%     %scale it and invert it for better representation
+%     %because z axis is inverted
+%     arrow_dir   = -bg_n * max_z/4; 
+%     quiver3(arrow_p(1), arrow_p(2), arrow_p(3),...
+%           arrow_dir(1)  , arrow_dir(2)  , arrow_dir(3), 'color', 'b'); 
+%     view(3)
+%     hold off
+    plotEt = [x(class==spheres(1)),y(class==spheres(1)),z(class==spheres(1))];
+    plotEtwo = [x(class==spheres(2)),y(class==spheres(2)),z(class==spheres(2))];
+    plotEthree = [x(class==spheres(3)),y(class==spheres(3)),z(class==spheres(3))];
+    [Center_LSE,Radius_LSE] = sphereFit(plotEt);
+    [Center_LSEtwo,Radius_LSEtwo] = sphereFit(plotEtwo);
+    [Center_LSEthree,Radius_LSEthree] = sphereFit(plotEthree);
+    
+    
+    plot3(plotEt(:,1),plotEt(:,2),plotEt(:,3),'r.')
+    hold on;daspect([1,1,1]);
+    [Base_X,Base_Y,Base_Z] = sphere(20);
+    surf(Radius_LSE*Base_X+Center_LSE(1),...
+        Radius_LSE*Base_Y+Center_LSE(2),...
+        Radius_LSE*Base_Z+Center_LSE(3),'faceAlpha',0.3,'Facecolor','m')
     hold on
-    %plotting arrow of background normal
-    arrow_p = bg_point;% 1x3
-    %scale it and invert it for better representation
-    %because z axis is inverted
-    arrow_dir   = -bg_n * max_z/4; 
-    quiver3(arrow_p(1), arrow_p(2), arrow_p(3),...
-          arrow_dir(1)  , arrow_dir(2)  , arrow_dir(3), 'color', 'b'); 
-    view(3)
-    hold off
+    plot3(plotEtwo(:,1),plotEtwo(:,2),plotEtwo(:,3),'g.')
+    hold on;
+    [Base_Xtwo,Base_Ytwo,Base_Ztwo] = sphere(20);
+    surf(Radius_LSEtwo*Base_Xtwo+Center_LSEtwo(1),...
+        Radius_LSEtwo*Base_Ytwo+Center_LSEtwo(2),...
+        Radius_LSEtwo*Base_Ztwo+Center_LSEtwo(3),'faceAlpha',0.3,'Facecolor','c')
+    hold on
+    plot3(plotEthree(:,1),plotEthree(:,2),plotEthree(:,3),'b.')
+    hold on;
+    [Base_Xthree,Base_Ythree,Base_Zthree] = sphere(20);
+    surf(Radius_LSEthree*Base_Xthree+Center_LSEthree(1),...
+        Radius_LSEthree*Base_Ythree+Center_LSEthree(2),...
+        Radius_LSEthree*Base_Zthree+Center_LSEthree(3),'faceAlpha',0.3,'Facecolor','y')
+%     view([45,28])
+%     legend({'Data','Actual Sphere','LSE Sphere'},'location','W')
+
+    hold on
+    
     % Plot each group individually: 
     for k = 1:length(spheres)
           % Get indices of this particular unique group:
@@ -140,6 +173,7 @@ function plotpcl(pcl)
     arrow_dir   = -bg_n * max_z/4; 
     quiver3(arrow_p(1), arrow_p(2), arrow_p(3),...
           arrow_dir(1)  , arrow_dir(2)  , arrow_dir(3), 'color', 'b'); 
+    camproj('perspective')
     view(3)
 return;%just for easy debug
     % Show colour image
