@@ -1,0 +1,112 @@
+function [xyzFG, rgbFG] = getForeground(pcl)
+%{
+#Convention
+ BG - background
+ FG - foreground
+  
+#Input
+  * pcl - 3D frame 
+
+#Output
+  * xyzFG - Coordinates of foreground pixels. 
+    Size: number of foreground points x 3.
+  * rgbFG - Colors of background pixels between 0 and 1. 
+    Size: number of foreground points x 3.
+
+#Algorithm
+  It relies on the fact that overwhelming majority of pixels belongs to
+  the background. 
+
+  The background surface essentially can be approximated by plane as frames
+  are shot on smooth floor. For that we need to estimate normal of this
+  plane and plane distance from origin of coordinate frame.
+
+  First, we compute the normal to the background surface by applying
+  PCA to centered cloud points. As we have 3D data we will receive 3 principal 
+  components. 1st and 2nd will be lying within surface of the background 
+  (because on the background surface the variety of coordinates is the 
+  greatest) and 3rd component will be orthogonal to them
+  and, therefore it will be normal to the background surface. 
+
+  After that we project centered cloud points on background normal and get
+  distribution where most of the points are concentrated on one level
+  (background points near the surface of background plane). By taking 50th
+  percentile of it we get value of this level and we are able to find 
+  distance from origin of global coordinate frame. 
+
+  Finally, we determine the correct direction of normal vector (where the 
+  spheres and cube cloud point lie) and remove all points which are located
+  not high enough from surface plane.
+
+%}
+  %select data point which has kinect 3D data relying on Bob Fisher email:
+%   I'm guessing that if it == 0, then this is non-existant data.
+%   The line finds all array entries where the z value is not equal to
+%   zero, and then uses x(kk) to extract the valid data.
+%   
+%   Cheers, Bob
+  %-------------- INITIAL CLEANING --------------
+  existingId = pcl(:, :, 6) ~= 0;
+  
+  x  = pcl(:, :, 4);
+  y  = pcl(:, :, 5);
+  z  = pcl(:, :, 6);
+  %delete non-existant data
+  x  = x(existingId);
+  y  = y(existingId);
+  z  = z(existingId);
+  
+  %matrix with background and foreground cloud points
+  xyz = [x y z];% number of cloud points x 3
+  
+  %roatate data a little bit for a better view
+  alpha = deg2rad(30);
+  R = [1 0 0; 0 cos(alpha) sin(alpha); 0 -sin(alpha) cos(alpha)];
+  xyz = (R*xyz')';
+  
+ 
+  %-------------- FINDING PLANE NORMAL --------------
+  %PCA
+  meanPoint = mean(xyz); % 1x3
+  %centering
+  xyzCentered = xyz - ones(size(xyz, 1), 1) * meanPoint;
+  %scatter matrix along XYZ
+  scatter = xyzCentered' * xyzCentered; % 3x3
+  %  
+  [U,D,V]= svd(scatter);
+  % compute background normal vector by selecting vector 
+  % with lowest eigenvalue
+  planeBGnormal = V(:, 3)'; %1x3
+  
+  %-------------- FINDING PLANE DISTANCE --------------
+  %project centered cloud points on background normal vector
+  %and estimating plane distance in this centered coordinate frame
+  normalBGdist = xyzCentered * planeBGnormal';
+  rawDistanceBG = prctile(normalBGdist, 50);
+  %point which is located on background surface
+  pointBG = meanPoint + rawDistanceBG * planeBGnormal;% 1x3
+
+  %background surface parameters for following equation:
+  % n*r=d where n - normal, d - offset along the normal
+  planeBGdistance = pointBG *  planeBGnormal'; %scalar
+  
+  %-------------- EXTRACTING FOREGROUND --------------
+  planeDistThreshold = 0.0305;
+  cloud_surf_prjs = xyz * planeBGnormal'; %number of cloud point x 1
+  %background indices
+  %bg_ids = (cloud_surf_prjs - d) < -threshold; 
+  surf_diff = cloud_surf_prjs - planeBGdistance;
+  bg_ids_raw = abs(surf_diff) < planeDistThreshold; 
+  %foreground indices
+  fg_ids_raw = ~bg_ids_raw;
+  fg_diff = surf_diff(fg_ids_raw);
+  %remove noise
+  heightThreshold = 0.0125;
+  norm_is_inverted = fg_diff(1) < 0;
+  if norm_is_inverted
+      fg_ids = (surf_diff) < -heightThreshold; 
+  else
+      fg_ids = (surf_diff) > heightThreshold;
+  end
+end
+
