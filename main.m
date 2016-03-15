@@ -12,14 +12,21 @@ for each 3D frame:
   * Extracting foreground using PCA and remove noise by using percentile 
     statistics (relying on the fact that overwhelming majority of 
     cloud points belongs to the background). Due to that most of outliers 
-    are removed on this stage.
+    are removed on this stage. Function: getForeground
   * Use DBscan clustering to allocate initial clusters 
-  * Select clusters which belongs to spheres using geometric information 
-    that spheres form outer triangle
-  * Compute color histograms of each spheres and compare it to the anchor 
-    3D frame and align sphere indices
-  * Find the rotation and translation of coordinate frame via PCA
-  * Apply rotation and translation to the cube cluster and store it 
+    Function: clustering
+  * Remove outliers near border from clustering stage by using the fact that
+    most of the points belong to cube and clusters which are too far away
+    from cube are outliers
+  * Extract spheres clusters by using geometric information (forms triangle)
+    and the fact that biggest cluster must be a cube
+  * Fit sphere cloud points with sphereFit function
+  * Save data
+
+Select baseline frame and compute color histograms of its spheres and 
+align spheres from all other frames accordingly. 
+Find the rotation and translation of coordinate frame via PCA.
+Apply rotation and translation to the cube cluster.
  
 After that merge all cube cloud points from each 3D frame and utilize 
 patch growing algorithm to select 9 planes. On this stage sampling 
@@ -38,8 +45,8 @@ on patch growing algorithm.
   PLOT_POSITIONS_ALONG_BG_NORMAL = -1;
   PLOT_CLUSTERS_WITH_OUTLIERS = -1;
   PLOT_CLUSTERS_CLEANED = -1;
-  PLOT_LOCATED_SPHERES = -1;
-  HIST_SPHERE_DISTS = 1;
+  PLOT_LOCATED_SPHERES = 1;
+  HIST_SPHERE_DISTS = -1;
   %shows background normal vector
   PLOT_BG_NORMAL = -1;
   
@@ -47,6 +54,8 @@ on patch growing algorithm.
   frameRange = 1:16;%1:length(frame3dArray);
   
   sphereCentersArray = cell(length(frameRange), 1);
+  xyzSpheresArray = cell(length(frameRange), 1);
+  rgbSpheresArray = cell(length(frameRange), 1);
   xyzCubeArray = cell(length(frameRange), 1);
   rgbCubeArray = cell(length(frameRange), 1);
   
@@ -94,41 +103,45 @@ on patch growing algorithm.
     end
     
     % --------------------- SPHERES EXTRACTION -----------------------
+    %display information about detected clusters 
+    %and extract spheres using information that we know which cluster is
+    %cube
+    
     nClusters = length(clusterIds);
     fprintf('%d clusters are detected after cleaning\n', nClusters);
     if nClusters == 4
       sphereIds = clusterIds(clusterIds ~= cubeId);
     elseif nClusters > 4
-        fprintf('Problem. Apply outer spheres triangle extraction\n');
+        fprintf('Warning. Apply outer spheres triangle extraction\n');
         continue; %skip  for now
     else
-      fprintf('Impossible to extract. Skip');
+      fprintf('Impossible to extract. Skip\n');
       continue;
     end
     
+    %final sphere ids (in correspondence to clusters)
     display(sphereIds, 'Sphere Ids');
     
-    sphereCenters = zeros(3, 3);
-    sphereRadiuses = zeros(3, 1);
-    spherePatches = cell(3, 1);
-    for j = 1:3
-      sphereId = sphereIds(j);
-      spherePatches{j} = xyz(clusters == sphereId, :);
-      [sphereCenter, sphereRadius] = sphereFit(spherePatches{j});
-      sphereCenters(j, :) = sphereCenter;
-      sphereRadiuses(j) = sphereRadius;
-    end
+    [sphereCenters, sphereRadiuses, xyzSpherePatches ,rgbSpherePatches] =...
+    extractSpheres(xyz, rgb, clusters, sphereIds);
     
     if PLOT_LOCATED_SPHERES == 1
-      plotSpheres(sphereCenters, sphereRadiuses, spherePatches);
+      plotSpheres(sphereCenters, sphereRadiuses, xyzSpherePatches);
     end
     
     sphereCentersArray{iFrame3d} = sphereCenters;
+    xyzSpheresArray{iFrame3d} = xyzSpherePatches;
+    rgbSpheresArray{iFrame3d} = rgbSpherePatches;
+    
     xyzCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
-    rgbCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
+    rgbCubeArray{iFrame3d} = rgb(clusters == cubeId, :);
+    
+    fprintf('\n\n');
   end
+  %--------------- END OF FRAME LOOP -------------------
   
-  %----------------- Registration ----------------------
+  
+  %----------------- REGISTRATION ----------------------
   
   %find first suitable baseline frame
   iBaselineFrame = -1;
@@ -147,6 +160,9 @@ on patch growing algorithm.
     return;
   end
   
+  %this code allows to evaluate whether it is possible to
+  %register spheres by comparing length of sides of triangles
+  %that they form.
   if HIST_SPHERE_DISTS == 1
     histSphereDists(sphereCentersArray);
   end
