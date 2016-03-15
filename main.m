@@ -1,3 +1,4 @@
+%run it as: main(pcl_cell)
 function [] = main(frame3dArray)
 %{
 #Naming Conventions
@@ -45,22 +46,30 @@ on patch growing algorithm.
   PLOT_POSITIONS_ALONG_BG_NORMAL = -1;
   PLOT_CLUSTERS_WITH_OUTLIERS = -1;
   PLOT_CLUSTERS_CLEANED = -1;
-  PLOT_LOCATED_SPHERES = 1;
+  PLOT_LOCATED_SPHERES = -1;
   HIST_SPHERE_DISTS = -1;
   %shows background normal vector
   PLOT_BG_NORMAL = -1;
+  PLOT_MERGED_CUBE = 1;
+  
+  SAVE_DATA_FOR_REGISTRATION = 1;
+  SAVE_DATA_FILE_NAME = 'registData2';
+  SAVE_MERGED_CUBE_DATA = 1;
+  SAVE_MERGED_CUBE_FILE_NAME = 'cubeMerged1';
+  
+  
   
   %for debuggin purposes only
   frameRange = 1:16;%1:length(frame3dArray);
   
   sphereCentersArray = cell(length(frameRange), 1);
-  xyzSpheresArray = cell(length(frameRange), 1);
-  rgbSpheresArray = cell(length(frameRange), 1);
+  xyzBallsArray = cell(length(frameRange), 1);
+  rgbBallsArray = cell(length(frameRange), 1);
   xyzCubeArray = cell(length(frameRange), 1);
   rgbCubeArray = cell(length(frameRange), 1);
   
   for iFrame3d = frameRange
-    fprintf('Process frame3d %d\n', iFrame3d);
+    fprintf('PROCESS FRAME %d !!!\n', iFrame3d);
     frame3d = frame3dArray{iFrame3d};
     
     % ------------------- EXTRACTING FOREGROUND --------------------------
@@ -121,17 +130,18 @@ on patch growing algorithm.
     
     %final sphere ids (in correspondence to clusters)
     display(sphereIds, 'Sphere Ids');
-    
-    [sphereCenters, sphereRadiuses, xyzSpherePatches ,rgbSpherePatches] =...
+    %xyzSpherePatches ,rgbSpherePatches are cell array
+    %where index belongs to one of 3 spheres
+    [sphereCenters, sphereRadiuses, xyzBallPatches ,rgbBallPatches] =...
     extractSpheres(xyz, rgb, clusters, sphereIds);
     
     if PLOT_LOCATED_SPHERES == 1
-      plotSpheres(sphereCenters, sphereRadiuses, xyzSpherePatches);
+      plotSpheres(sphereCenters, sphereRadiuses, xyzBallPatches);
     end
     
     sphereCentersArray{iFrame3d} = sphereCenters;
-    xyzSpheresArray{iFrame3d} = xyzSpherePatches;
-    rgbSpheresArray{iFrame3d} = rgbSpherePatches;
+    xyzBallsArray{iFrame3d} = xyzBallPatches;
+    rgbBallsArray{iFrame3d} = rgbBallPatches;
     
     xyzCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
     rgbCubeArray{iFrame3d} = rgb(clusters == cubeId, :);
@@ -141,24 +151,7 @@ on patch growing algorithm.
   %--------------- END OF FRAME LOOP -------------------
   
   
-  %----------------- REGISTRATION ----------------------
-  
-  %find first suitable baseline frame
-  iBaselineFrame = -1;
-  for j = 1:length(xyzCubeArray)
-    if isempty(xyzCubeArray{j})
-      fprintf('frame %d is empty', j);
-    else
-      if iBaselineFrame == -1
-        iBaselineFrame = j;
-      end
-    end
-  end
-  
-  if iBaselineFrame == -1
-    fprintf('Warning! All frames are empty!\n');
-    return;
-  end
+  %----------------- REGISTRATION AND MERGE ----------------------
   
   %this code allows to evaluate whether it is possible to
   %register spheres by comparing length of sides of triangles
@@ -166,5 +159,45 @@ on patch growing algorithm.
   if HIST_SPHERE_DISTS == 1
     histSphereDists(sphereCentersArray);
   end
+  
+  %for testing purposes.
+  %To skip previous steps and experiment with data directly
+  %Saves a lot of time
+  if SAVE_DATA_FOR_REGISTRATION == 1
+    save(SAVE_DATA_FILE_NAME,...
+         'sphereCentersArray',...
+         'xyzBallsArray',...
+         'rgbBallsArray',...
+         'xyzCubeArray',...
+         'rgbCubeArray');  
+    fprintf('\n\nData is saved to %s \n\n', SAVE_DATA_FILE_NAME);
+  end
+  
+  [xyzMerged, rgbMerged] = merge(rgbBallsArray, sphereCentersArray, xyzCubeArray, rgbCubeArray);
+  if PLOT_MERGED_CUBE == 1
+     plotMergedCube(xyzMerged, rgbMerged);
+  end
+  
+  %for testing purposes.
+  %To skip previous steps and experiment with data directly
+  %Saves a lot of time
+  if SAVE_MERGED_CUBE_DATA == 1
+    save(SAVE_MERGED_CUBE_FILE_NAME,'xyzMerged', 'rgbMerged');
+  end
+  
+  %----------------- MODEL EXTRACTION ----------------------
+  %TODOR, YOU GO HERE. THIS PROGRAM MAY WORK DIFFERENTLY ON DIFFERENT MATLABS
+  %VERSIONS AS I AM FIXING RANDOM SEED. WATCH LECTURSE ADOPT 3 FUNCTIONS FROM THERE.
+  %PLANE EXTRACTION WILL WORK VERY SLOWLY (4 MINS) BECAUSE THERE ARE OVER 90000
+  %POINTS IN THE MERGED DATA. THAT IS WHY YOU WILL NEED TO DOWNSAMPLE TO 
+  %APPROXIMATELY 20000-30000 POINTS (YOU WILL GET 6 TIMES BOOST). THIS
+  %DOWNSAMPLING IS VERY IMPORTANT AS I AM SURE THAT THEY WILL GIVE EXTRA
+  %POINTS FOR THIS SPEED AND DOWNSAMPLING IS JUST SELECTING POINTS RANDOMLY
+  
+  %THRERE IS ALMOST NO NOISE IN THE MERGED DATA
+  
+  %IN ORDER TO SAVE YOUR TIME YOU CAN EXPERIMENT IN testModelExtraction()
+  %IN THAT CASE YOU WON'T HAVE TO WAIT 1-2 MINUTES TO SEE RESULTS AS IT
+  %JUST LOADS THE MERGED DATA FROM cubeMerged1.mat
 end
 
