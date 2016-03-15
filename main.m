@@ -31,13 +31,12 @@ on patch growing algorithm.
   %close all opened windows
   close all;
   %---------- PARAMETERS FOR PLOTTING ----------------
-  %Each plot is shown for a specific frames.
-  %Set to [-1] in order to avoid showing them.
-  %global plotForegroundFrame3d;
-  %shows foreground cloud points for specific frames
-  PLOT_FOREGROUND_FRAME3D = [-1];
+  PLOT_FOREGROUND_FRAME3D = -1;
   %shows distribution of all cloud points along background normal
-  PLOTPOSITIONS_ALONG_BG_NORMAL = [-1];
+  PLOT_POSITIONS_ALONG_BG_NORMAL = -1;
+  PLOT_CLUSTERS_WITH_OUTLIERS = -1;
+  PLOT_CLUSTERS_CLEANED = -1;
+  PLOT_LOCATED_SPHERES = 1;
   %shows background normal vector
   SHOW_BG_NORMAL = 1;
   for iFrame3d = 8:8%1:length(frame3dArray)
@@ -48,39 +47,70 @@ on patch growing algorithm.
 
     fprintf('Extracting foreground\n');
     
-    [xyzFg, rgbFg, planeBgNormal, planeBgPoint] = getForeground(frame3d,...
-      ismember(iFrame3d, PLOTPOSITIONS_ALONG_BG_NORMAL));
+    [xyz, rgb, planeBgNormal, planeBgPoint] = getForeground(frame3d,...
+      ismember(iFrame3d, PLOT_POSITIONS_ALONG_BG_NORMAL));
     
-    fprintf('Number of foreground cloud points: %d\n', size(xyzFg, 1));
-    if ismember(iFrame3d, PLOT_FOREGROUND_FRAME3D);
+    fprintf('Number of foreground cloud points: %d\n', size(xyz, 1));
+    if PLOT_FOREGROUND_FRAME3D == 1;
       if SHOW_BG_NORMAL == 1
-        plotFrame3d(xyzFg, rgbFg, planeBgNormal, planeBgPoint);
+        plotFrame3d(xyz, rgb, planeBgNormal, planeBgPoint);
       else
-        plotFrame3d(xyzFg, rgbFg);
+        plotFrame3d(xyz, rgb);
       end
     end
     
     % ----------------------- CLUSTERING  --------------------------
-    [xyzCleaned, clusters, cluster2mean, clusterIds, cubeId] = clustering(xyzFg);
-    clusterIds
-    printClustersSizes(clusters, clusterIds)
-    figure();
-    clf;
+    [xyz, rgb, clusters, cluster2mean, clusterIds, cubeId] = clustering(xyz, rgb);
+    
+    display(clusterIds, 'clusters ids with possible outliers');
+    printClustersSizes(clusters, clusterIds);
     colors = brewermap(length(clusterIds),'Set1'); 
-    if ismember(-1, clusterIds)
-      fscatter32(xyzCleaned(:,1), xyzCleaned(:,2), xyzCleaned(:,3), clusters + 1, colors);
-    else
-      fscatter32(xyzCleaned(:,1), xyzCleaned(:,2), xyzCleaned(:,3), clusters, colors);
+   	if PLOT_CLUSTERS_WITH_OUTLIERS == 1
+      plotClusters(xyz, clusters, colors);
     end
     
-    max_z = max(xyzFg(:,3));
-    zlim([0.2 max_z])
-    ylim([0 1])
-    xlim([-.5 .5])
-    set(gca,'zdir','reverse')
-    fprintf('K: %d\n', 5);
-    for i = 1:length(clusterIds)
-      clusterId = clusterIds(i);  
+    % final cluster cleaning
+    % dbscan mark outliers by -1 id that is why we are removing them
+    clusterIds = clusterIds(clusterIds ~= -1);
+    xyz = xyz(clusters ~= -1, :);
+    rgb = rgb(clusters ~= -1, :);
+    clusters = clusters(clusters ~= -1);
+    
+    display(clusterIds, 'clusters ids cleaned');
+    
+    if PLOT_CLUSTERS_CLEANED == 1
+      plotClusters(xyz, clusters, colors);
+    end
+    
+    % --------------------- SPHERES EXTRACTION -----------------------
+    nClusters = length(clusterIds);
+    fprintf('%d clusters are detected after cleaning\n', nClusters);
+    if nClusters == 4
+      fprintf('4 clusters are detected after cleaning\n');
+      sphereIds = clusterIds(clusterIds ~= cubeId);
+    elseif nClusters > 4
+      fprintf('Problem. Apply outer spheres triangle extraction\n');
+      continue; %skip  for now
+    elseif nCluster < 4;
+      fprintf('Impossible to extract. Skip');
+      continue;
+    end
+    
+    display(sphereIds, 'Sphere Ids');
+    
+    sphereCenters = zeros(3, 3);
+    sphereRadiuses = zeros(3, 1);
+    spherePatches = cell(3, 1);
+    for j = 1:3
+      sphereId = sphereIds(j);
+      spherePatches{j} = xyz(clusters == sphereId, :);
+      [sphereCenter, sphereRadius] = sphereFit(spherePatches{j})
+      sphereCenters(j, :) = sphereCenter;
+      sphereRadiuses(j) = sphereRadius;
+    end
+    
+    if PLOT_LOCATED_SPHERES == 1
+      plotSpheres(sphereCenters, sphereRadiuses, spherePatches)
     end
   end
 end
