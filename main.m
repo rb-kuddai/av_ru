@@ -26,7 +26,9 @@ patch growing algorithm to select 9 planes. On this stage sampling
 is used to reduce the number of cloud points and reduce load 
 on patch growing algorithm.
 %}  
-%[xyzFg, rgbFg] = getForeground(
+
+
+  %fix random seed to have repeatable resutls
   rng(2016);
   %close all opened windows
   close all;
@@ -36,10 +38,19 @@ on patch growing algorithm.
   PLOT_POSITIONS_ALONG_BG_NORMAL = -1;
   PLOT_CLUSTERS_WITH_OUTLIERS = -1;
   PLOT_CLUSTERS_CLEANED = -1;
-  PLOT_LOCATED_SPHERES = 1;
+  PLOT_LOCATED_SPHERES = -1;
+  HIST_SPHERE_DISTS = 1;
   %shows background normal vector
-  SHOW_BG_NORMAL = 1;
-  for iFrame3d = 8:8%1:length(frame3dArray)
+  PLOT_BG_NORMAL = -1;
+  
+  %for debuggin purposes only
+  frameRange = 1:16;%1:length(frame3dArray);
+  
+  sphereCentersArray = cell(length(frameRange), 1);
+  xyzCubeArray = cell(length(frameRange), 1);
+  rgbCubeArray = cell(length(frameRange), 1);
+  
+  for iFrame3d = frameRange
     fprintf('Process frame3d %d\n', iFrame3d);
     frame3d = frame3dArray{iFrame3d};
     
@@ -48,11 +59,11 @@ on patch growing algorithm.
     fprintf('Extracting foreground\n');
     
     [xyz, rgb, planeBgNormal, planeBgPoint] = getForeground(frame3d,...
-      ismember(iFrame3d, PLOT_POSITIONS_ALONG_BG_NORMAL));
+                                            PLOT_POSITIONS_ALONG_BG_NORMAL);
     
     fprintf('Number of foreground cloud points: %d\n', size(xyz, 1));
     if PLOT_FOREGROUND_FRAME3D == 1;
-      if SHOW_BG_NORMAL == 1
+      if PLOT_BG_NORMAL == 1
         plotFrame3d(xyz, rgb, planeBgNormal, planeBgPoint);
       else
         plotFrame3d(xyz, rgb);
@@ -86,12 +97,11 @@ on patch growing algorithm.
     nClusters = length(clusterIds);
     fprintf('%d clusters are detected after cleaning\n', nClusters);
     if nClusters == 4
-      fprintf('4 clusters are detected after cleaning\n');
       sphereIds = clusterIds(clusterIds ~= cubeId);
     elseif nClusters > 4
-      fprintf('Problem. Apply outer spheres triangle extraction\n');
-      continue; %skip  for now
-    elseif nCluster < 4;
+        fprintf('Problem. Apply outer spheres triangle extraction\n');
+        continue; %skip  for now
+    else
       fprintf('Impossible to extract. Skip');
       continue;
     end
@@ -104,14 +114,41 @@ on patch growing algorithm.
     for j = 1:3
       sphereId = sphereIds(j);
       spherePatches{j} = xyz(clusters == sphereId, :);
-      [sphereCenter, sphereRadius] = sphereFit(spherePatches{j})
+      [sphereCenter, sphereRadius] = sphereFit(spherePatches{j});
       sphereCenters(j, :) = sphereCenter;
       sphereRadiuses(j) = sphereRadius;
     end
     
     if PLOT_LOCATED_SPHERES == 1
-      plotSpheres(sphereCenters, sphereRadiuses, spherePatches)
+      plotSpheres(sphereCenters, sphereRadiuses, spherePatches);
     end
+    
+    sphereCentersArray{iFrame3d} = sphereCenters;
+    xyzCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
+    rgbCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
+  end
+  
+  %----------------- Registration ----------------------
+  
+  %find first suitable baseline frame
+  iBaselineFrame = -1;
+  for j = 1:length(xyzCubeArray)
+    if isempty(xyzCubeArray{j})
+      fprintf('frame %d is empty', j);
+    else
+      if iBaselineFrame == -1
+        iBaselineFrame = j;
+      end
+    end
+  end
+  
+  if iBaselineFrame == -1
+    fprintf('Warning! All frames are empty!\n');
+    return;
+  end
+  
+  if HIST_SPHERE_DISTS == 1
+    histSphereDists(sphereCentersArray);
   end
 end
 
