@@ -111,7 +111,8 @@ function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D, showProjecte
   planeBgDistance = pointBg *  normalBg'; %scalar
   
   %-------------- EXTRACTING FOREGROUND --------------
-  planeDistThreshold = 0.0305;
+  % finding points which are close to the background plane
+  planeDistThreshold = 0.0355;
   xyzProjected = xyz * normalBg'; %number of cloud point x 1
   %background indices
   %bg_ids = (cloud_surf_prjs - d) < -threshold; 
@@ -120,11 +121,13 @@ function [xyzFg, rgbFg, normalBg, pointBg] = getForeground(frame3D, showProjecte
   %foreground indices
   fgIdsRaw = ~bgIds;
   fgDiff = diffFromBg(fgIdsRaw);
-  %remove noise
+  
+  % removing clound points which are not high enough from background
   heightThreshold = 0.0125;
   normIsInverted = fgDiff(1) < 0;
   if normIsInverted
       fgIds = (diffFromBg) < -heightThreshold; 
+      %flip normal as it will be needed only for plotting
       normalBg = -normalBg;
   else
       fgIds = (diffFromBg) > heightThreshold;

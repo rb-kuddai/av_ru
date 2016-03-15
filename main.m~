@@ -27,7 +27,7 @@ is used to reduce the number of cloud points and reduce load
 on patch growing algorithm.
 %}  
 %[xyzFg, rgbFg] = getForeground(
-
+  rng(2016);
   %close all opened windows
   close all;
   %---------- PARAMETERS FOR PLOTTING ----------------
@@ -35,30 +35,46 @@ on patch growing algorithm.
   %Set to [-1] in order to avoid showing them.
   %global plotForegroundFrame3d;
   %shows foreground cloud points for specific frames
-  plotForegroundFrame3d = [1:length(frame3dArray)];
+  PLOT_FOREGROUND_FRAME3D = [-1];
   %shows distribution of all cloud points along background normal
-  plotPositionsAlongBgNormal = [-1];
-  showBgNormal = -1;
-  for iFrame3d = 1:length(frame3dArray)
-    
-    % ------------------- Extracting Foreground --------------------------
+  PLOTPOSITIONS_ALONG_BG_NORMAL = [-1];
+  %shows background normal vector
+  SHOW_BG_NORMAL = 1;
+  for iFrame3d = 1:1%1:length(frame3dArray)
     fprintf('Process frame3d %d\n', iFrame3d);
     frame3d = frame3dArray{iFrame3d};
+    
+    % ------------------- EXTRACTING FOREGROUND --------------------------
+
     fprintf('Extracting foreground\n');
     
     [xyzFg, rgbFg, planeBgNormal, planeBgPoint] = getForeground(frame3d,...
-      ismember(iFrame3d, plotPositionsAlongBgNormal));
+      ismember(iFrame3d, PLOTPOSITIONS_ALONG_BG_NORMAL));
     
     fprintf('Number of foreground cloud points: %d\n', size(xyzFg, 1));
-    if ismember(iFrame3d, plotForegroundFrame3d);
-      if showBgNormal == 1
+    if ismember(iFrame3d, PLOT_FOREGROUND_FRAME3D);
+      if SHOW_BG_NORMAL == 1
         plotFrame3d(xyzFg, rgbFg, planeBgNormal, planeBgPoint);
       else
         plotFrame3d(xyzFg, rgbFg);
       end
     end
     
-    
+    % ----------------------- CLUSTERING  --------------------------
+    [clusters, cluster2mean, clusterIds, cubeId] = clustering(xyzFg);
+    clusterIds
+    figure();
+    clf;
+    fscatter32(xyzFg(:,1), xyzFg(:,2), xyzFg(:,3), clusters + 1, );
+    max_z = max(xyzFg(:,3));
+    zlim([0.2 max_z])
+    %ylim([0 1])
+    %xlim([-.5 .5])
+    set(gca,'zdir','reverse')
+    fprintf('K: %d\n', 5);
+    for i = 1:length(clusterIds)
+      clusterId = clusterIds(i);  
+    end
   end
 end
 

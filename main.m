@@ -27,7 +27,7 @@ is used to reduce the number of cloud points and reduce load
 on patch growing algorithm.
 %}  
 %[xyzFg, rgbFg] = getForeground(
-
+  rng(2016);
   %close all opened windows
   close all;
   %---------- PARAMETERS FOR PLOTTING ----------------
@@ -35,12 +35,12 @@ on patch growing algorithm.
   %Set to [-1] in order to avoid showing them.
   %global plotForegroundFrame3d;
   %shows foreground cloud points for specific frames
-  PLOT_FOREGROUND_FRAME3D = [1:length(frame3dArray)];
+  PLOT_FOREGROUND_FRAME3D = [-1];
   %shows distribution of all cloud points along background normal
   PLOTPOSITIONS_ALONG_BG_NORMAL = [-1];
   %shows background normal vector
-  SHOW_BG_NORMAL = -1;
-  for iFrame3d = 1:length(frame3dArray)
+  SHOW_BG_NORMAL = 1;
+  for iFrame3d = 8:8%1:length(frame3dArray)
     fprintf('Process frame3d %d\n', iFrame3d);
     frame3d = frame3dArray{iFrame3d};
     
@@ -61,7 +61,27 @@ on patch growing algorithm.
     end
     
     % ----------------------- CLUSTERING  --------------------------
+    [xyzCleaned, clusters, cluster2mean, clusterIds, cubeId] = clustering(xyzFg);
+    clusterIds
+    printClustersSizes(clusters, clusterIds)
+    figure();
+    clf;
+    colors = brewermap(length(clusterIds),'Set1'); 
+    if ismember(-1, clusterIds)
+      fscatter32(xyzCleaned(:,1), xyzCleaned(:,2), xyzCleaned(:,3), clusters + 1, colors);
+    else
+      fscatter32(xyzCleaned(:,1), xyzCleaned(:,2), xyzCleaned(:,3), clusters, colors);
+    end
     
+    max_z = max(xyzFg(:,3));
+    zlim([0.2 max_z])
+    ylim([0 1])
+    xlim([-.5 .5])
+    set(gca,'zdir','reverse')
+    fprintf('K: %d\n', 5);
+    for i = 1:length(clusterIds)
+      clusterId = clusterIds(i);  
+    end
   end
 end
 

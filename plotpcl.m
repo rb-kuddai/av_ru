@@ -7,6 +7,17 @@ function plotpcl(pcl)
     x  = x(kk);
     y  = y(kk);
     z  = z(kk);
+    
+    %colors
+    r  = pcl(:, :, 1);
+    g  = pcl(:, :, 2);
+    b  = pcl(:, :, 3);
+
+    r  = r(kk);
+    g  = g(kk);
+    b  = b(kk);
+    
+    
     rgbUndistorted = pcl(:,:,1:3)/255;
     [Xim, cm] = rgb2ind(rgbUndistorted, 512);
     Xim = Xim(kk);
@@ -66,13 +77,22 @@ function plotpcl(pcl)
     xyz = XYZ(fg_ids,:);
     % cluster in n categories with DBSCAN with automatic epsilon
     [class, type]=dbscan([XYZ(fg_ids,1),XYZ(fg_ids,2),XYZ(fg_ids,3)],100);
+    figure();
+    
     % unqiue class names
-    uniqueGroups = unique(class);
+    uniqueGroups = unique(class)
+    fscatter32(x, y, z, Xim(fg_ids), cm);
+    max_z = max(xyz(:,3));
+    %zlim([0.2 max_z])
+    %ylim([0 1])
+    %xlim([-.5 .5])
+    set(gca,'zdir','reverse')
     % RGB values of your favorite colors: 
     % Initialize some axes
     view(3)
-    grid on
+    %grid on
     hold on
+    return
     % obtain all possible combinations of clusters
     triples = combnk (uniqueGroups,3);
     % compute means for each cluster 1x3 - per cluster
@@ -94,8 +114,10 @@ function plotpcl(pcl)
         end;
     end;
     % choose spheres
+    
+    
     index = area==maxArea;
-    spheres = triples(index,:); % those are the three spheres
+    spheres = triples(index,:) % those are the three spheres
     rest = setdiff(uniqueGroups,spheres);
     % set cluster colours
     colors = brewermap(length(spheres),'Set1'); 

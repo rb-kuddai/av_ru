@@ -51,7 +51,6 @@ x=[[1:m]' x];
 type=zeros(1,m);
 no=1;
 touched=zeros(m,1);
-
 for i=1:m
     if touched(i)==0;
        ob=x(i,:);
