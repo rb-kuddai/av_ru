@@ -1,5 +1,5 @@
 % fits a plane to the given set (pointlist) of 3D points
-function [plane,fit] = fitplane(pointlist)
+function [plane,fit, N] = fitplane(pointlist)
 
   [L,W] = size(pointlist);  % input list of L points
   plane = zeros(4,1);
