@@ -57,6 +57,11 @@ on patch growing algorithm.
   SAVE_MERGED_CUBE_DATA = 1;
   SAVE_MERGED_CUBE_FILE_NAME = 'cubeMerged1';
   
+  % set custom cluster size and colours
+  NUMBER_OF_CLUSTERS = 9;
+  COLOURS = brewermap(NUMBER_OF_CLUSTERS,'Set1');
+
+  
   
   
   %for debuggin purposes only
@@ -185,19 +190,25 @@ on patch growing algorithm.
     save(SAVE_MERGED_CUBE_FILE_NAME,'xyzMerged', 'rgbMerged');
   end
   
-  %----------------- MODEL EXTRACTION ----------------------
-  %TODOR, YOU GO HERE. THIS PROGRAM MAY WORK DIFFERENTLY ON DIFFERENT MATLABS
-  %VERSIONS AS I AM FIXING RANDOM SEED. WATCH LECTURSE ADOPT 3 FUNCTIONS FROM THERE.
-  %PLANE EXTRACTION WILL WORK VERY SLOWLY (4 MINS) BECAUSE THERE ARE OVER 90000
-  %POINTS IN THE MERGED DATA. THAT IS WHY YOU WILL NEED TO DOWNSAMPLE TO 
-  %APPROXIMATELY 20000-30000 POINTS (YOU WILL GET 6 TIMES BOOST). THIS
-  %DOWNSAMPLING IS VERY IMPORTANT AS I AM SURE THAT THEY WILL GIVE EXTRA
-  %POINTS FOR THIS SPEED AND DOWNSAMPLING IS JUST SELECTING POINTS RANDOMLY
-  
-  %THRERE IS ALMOST NO NOISE IN THE MERGED DATA
-  
-  %IN ORDER TO SAVE YOUR TIME YOU CAN EXPERIMENT IN testModelExtraction()
-  %IN THAT CASE YOU WON'T HAVE TO WAIT 1-2 MINUTES TO SEE RESULTS AS IT
-  %JUST LOADS THE MERGED DATA FROM cubeMerged1.mat
+   %----------------- MODEL EXTRACTION ----------------------
+   %   We adopt the plane segmentation algorithm from class. 
+   % Note that each plane is coloured in different colour. 
+   % We extract our model in about one minute. We achieve this by
+   % uniformly sampling a quarter of the data 
+   % We differentiate between the 9 planes and colour them accordingly.
+   % We then compute the angles between all plots
+    
+   %reseting seed
+   rng(2016); % ensure clear and concise testing
+   %Cleaning and reseting
+   close all; clf;
+   pause(0.5)
+   % build model
+   [listOfClusters,clusterSize] = completeModel(xyzMerged,COLOURS,...
+                                                    NUMBER_OF_CLUSTERS);
+   % compute angles
+   surface_angles = computeAngles(listOfClusters, clusterSize, ...
+                                                    NUMBER_OF_CLUSTERS)
+   fprintf('End.');
 end
 
