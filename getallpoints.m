@@ -5,8 +5,8 @@ function [newlist,remaining] = getallpoints(plane,oldlist,P,NP)
   pnt = ones(4,1);
   [N,W] = size(P);
   [Nold,W] = size(oldlist);
-  DISTTOL =  0.04;
-  PLANETOL = 0.0016;
+  DISTTOL = 0.0047;
+  PLANETOL = 0.02;
   tmpnewlist = zeros(NP,3);
   tmpnewlist(1:Nold,:) = oldlist;       % initialize fit list
   tmpremaining = zeros(NP,3);           % initialize unfit list
@@ -25,12 +25,6 @@ function [newlist,remaining] = getallpoints(plane,oldlist,P,NP)
           countnew = countnew + 1;
           tmpnewlist(countnew,:) = P(i,:);
           notused = 0;
-          % get rid of outliers
-          blah = tmpnewlist;
-          blah(all(blah==0,2),:)=[];
-          scatter3(blah(:,1),blah(:,2),blah(:,3),'r.','SizeData',2)
-          hold on
-          set(gca,'zdir','reverse');
           break;
         end
       end      
@@ -44,7 +38,4 @@ function [newlist,remaining] = getallpoints(plane,oldlist,P,NP)
 
   newlist = tmpnewlist(1:countnew,:);
   remaining = tmpremaining(1:countrem,:);
-countnew
-countrem
-Nold
 
