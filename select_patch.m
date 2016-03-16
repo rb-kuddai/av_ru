@@ -1,5 +1,5 @@
 % find a candidate planar patch
-function [fitlist,plane] = select_patch(points)
+function [fitcount,fitlist,plane] = select_patch(points)
 
 %   points(all(points<1e-5,2),:)=[];
   [L,D] = size(points);
@@ -15,10 +15,10 @@ function [fitlist,plane] = select_patch(points)
         pnt = points(idx,:);
     end
     
-%     scatter3(pnt(:,1),pnt(:,2),pnt(:,3),'r.','SizeData',5)
+    scatter3(pnt(:,1),pnt(:,2),pnt(:,3),'r.','SizeData',5)
   
     % find points in the neighborhood of the given point
-    DISTTOL = 0.004;
+    DISTTOL = 0.008;
     fitcount = 0;
     restcount = 0;
     for i = 1 : L
@@ -34,10 +34,11 @@ function [fitlist,plane] = select_patch(points)
     oldlist = tmprest(1:restcount,:);
 %     hold on
 % get rid of outliers
-    tmpnew(all(tmpnew==0,2),:)=[];
-    scatter3(tmpnew(:,1),tmpnew(:,2),tmpnew(:,3),'r.','SizeData',15)
-    hold on
-    set(gca,'zdir','reverse');
+    plotet=tmpnew;
+    plotet(all(plotet==0,2),:)=[];
+    scatter3(plotet(:,1),plotet(:,2),plotet(:,3),'r.','SizeData',35)
+%     hold on
+%     set(gca,'zdir','reverse');
     if fitcount > 10
       % fit a plane
       [plane,resid] = fitplane(tmpnew(1:fitcount,:))
