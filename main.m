@@ -206,6 +206,7 @@ on patch growing algorithm.
    % build model
    [listOfClusters,clusterSize] = completeModel(xyzMerged,COLOURS,...
                                                     NUMBER_OF_CLUSTERS);
+   extractedRepresentation(listOfClusters,COLOURS);
    % compute angles
    surface_angles = computeAngles(listOfClusters, clusterSize, ...
                                                     NUMBER_OF_CLUSTERS)
