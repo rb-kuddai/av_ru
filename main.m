@@ -50,7 +50,8 @@ on patch growing algorithm.
   HIST_SPHERE_DISTS = -1;
   %shows background normal vector
   PLOT_BG_NORMAL = -1;
-  PLOT_MERGED_CUBE = 1;
+  PLOT_MERGED_CUBE = -1;
+  PLOT_CUBE_POINTS = 1;
   
   SAVE_DATA_FOR_REGISTRATION = 1;
   SAVE_DATA_FILE_NAME = 'registData2';
@@ -150,6 +151,10 @@ on patch growing algorithm.
     
     xyzCubeArray{iFrame3d} = xyz(clusters == cubeId, :);
     rgbCubeArray{iFrame3d} = rgb(clusters == cubeId, :);
+    
+    if PLOT_CUBE_POINTS == 1
+      plotFrame3d(xyzCubeArray{iFrame3d}, rgbCubeArray{iFrame3d});
+    end
     
     fprintf('\n\n');
   end
