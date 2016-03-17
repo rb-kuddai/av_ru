@@ -17,6 +17,7 @@ function [ surface_angles ] = computeAngles( list_clusters,clusterSize,number_of
                 two = reshape(two,[100,3]);
                 [plane,fit,N2] = fitplane(two(:,:));
                 % Computing the angle between two planes
+                % http://uk.mathworks.com/matlabcentral/answers/168181-angle-between-two-planes-on-the-x-0-y-0-and-z-0-planes
                 surface_angles(i,y) = rad2deg(atan2(norm(cross(N1,N2)),dot(N1,N2)));
                 if surface_angles(i,y) > 90.0
                     surface_angles(i,y) = 180 - surface_angles(i,y);
