@@ -1,4 +1,4 @@
-# AdvancedVision2
+# [AdvancedVision2](http://www.inf.ed.ac.uk/teaching/courses/av/)
 
 Это задание выполнялось совместно с  [Todor Davchev](https://github.com/yadrimz/3D-Modelling-Kinect). 
 Задача была в том, чтобы соединить вместе объемные снимки (range data) с Kinect, чтобы
