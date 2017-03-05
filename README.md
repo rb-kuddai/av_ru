@@ -9,8 +9,8 @@
 
 Получившиеся соединенные точки:
 
-[merged_cube](https://github.com/rb-kuddai/av_ru/blob/master/merged_cube.png)
+[!merged_cube](https://github.com/rb-kuddai/av_ru/blob/master/merged_cube.png)
 
 И поверхности на их основе:
 
-[planes](https://github.com/rb-kuddai/av_ru/blob/master/extracted_planes.png)
+[!planes](https://github.com/rb-kuddai/av_ru/blob/master/extracted_planes.png)
