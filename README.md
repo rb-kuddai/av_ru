@@ -7,10 +7,15 @@
 Отчет находится в [Advanced_Vision_Assignment_2.pdf](https://github.com/rb-kuddai/av_ru/blob/master/Advanced_Vision_Assignment_2.pdf).
 Главные части алгоритма с комментариями описаны в [main.m](https://github.com/yadrimz/3D-Modelling-Kinect/blob/master/main.m). 
 
-Получившиеся соединенные точки:
+Пример одного объемного снимка:
+
+![range_data](https://github.com/rb-kuddai/av_ru/blob/master/images/plane_background_PCA.png)
+
+Получившиеся объединеные точки объекта очищенные от лишнего:
 
 ![merged_cube](https://github.com/rb-kuddai/av_ru/blob/master/merged_cube.png)
 
 И поверхности на их основе:
 
 ![planes](https://github.com/rb-kuddai/av_ru/blob/master/extracted_planes.png)
+
